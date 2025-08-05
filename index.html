@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Interactif</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+
+        .quiz-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            color: #fff;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        h2 {
+            color: #fff;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .question-counter {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+        }
+
+        .question-text {
+            font-size: 1.4em;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .answers-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .answer-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 15px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .answer-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        @media (max-width: 600px) {
+            .answer-btn {
+                font-size: 1em;
+                padding: 12px 16px;
+                width: 200px;
+            }
+            
+        .answers-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-self: center;
+            align-items: center;
+            justify-content: center;
+            justify-items: center;
+        }
+        }
+
+        .answer-btn.correct {
+            background: rgba(76, 175, 80, 0.8);
+            border-color: #4CAF50;
+            animation: pulse 0.5s ease-in-out;
+        }
+
+        .answer-btn.incorrect {
+            background: rgba(244, 67, 54, 0.8);
+            border-color: #f44336;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .feedback {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .feedback.correct {
+            background: rgba(76, 175, 80, 0.3);
+            border: 2px solid #4CAF50;
+        }
+
+        .feedback.incorrect {
+            background: rgba(244, 67, 54, 0.3);
+            border: 2px solid #f44336;
+        }
+
+        .next-btn, .start-btn, .restart-btn {
+            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .next-btn:hover, .start-btn:hover, .restart-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .score-display {
+            font-size: 3em;
+            font-weight: bold;
+            margin: 30px 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .score-message {
+            font-size: 1.5em;
+            margin-bottom: 30px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FF6B6B, #4ECDC4);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="quiz-container">
+        <!-- Page d'accueil -->
+        <div class="page active" id="welcome-page">
+            <h1>🧠 Quiz Spécial stories</h1>
+            <p style="font-size: 1.3em; margin-bottom: 30px;">
+                On va voir si tu connais bien la sto 😏
+!
+            </p>
+            <button class="start-btn" onclick="startQuiz()">Commencer le Quiz</button>
+        </div>
+
+        <!-- Pages des questions -->
+        <div class="page" id="question-page">
+            <div class="question-header">
+                <div class="question-counter" id="question-counter">Question 1/5</div>
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+
+            <div class="question-text" id="question-text"></div>
+            
+            <div class="answers-grid" id="answers-grid">
+                <button class="answer-btn" onclick="selectAnswer(0)"></button>
+                <button class="answer-btn" onclick="selectAnswer(1)"></button>
+                <button class="answer-btn" onclick="selectAnswer(2)"></button>
+                <button class="answer-btn" onclick="selectAnswer(3)"></button>
+            </div>
+
+            <div class="feedback" id="feedback" style="display: none;"></div>
+            
+            <button class="next-btn" id="next-btn" onclick="nextQuestion()" style="display: none;">
+                Question Suivante
+            </button>
+        </div>
+
+        <!-- Page des résultats -->
+        <div class="page" id="results-page">
+            <h2>🎉 Quiz Terminé !</h2>
+            <div class="score-display" id="score-display"></div>
+            <div class="score-message" id="score-message"></div>
+            <div id="detailed-results"></div>
+            <button class="restart-btn" onclick="restartQuiz()">Recommencer</button>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                question: "Comment s'appelle la soeur de Dash ?",
+                answers: ["Dashette Lapix", "Annette Lapix", "Soeur de Dash", "Annette sway razer"],
+                correct: 1
+            },
+            {
+                question: "Laquelle de ces personne a un crush pour Cristopher ?",
+                answers: ["Lila", "Jeanne simons", "Inès", "Louna"],
+                correct: 1
+            },
+            {
+                question: "lequelle de ces graçons peut tenir avec Marrion ?",
+                answers: ["Johnatan", "Rodrigo", "Puissance 4", "Enzo "],
+                correct: 1
+            },
+            {
+                question:" Qui est le meilleur ami de Jason ?",
+                answers: ["Dash", "Jocker", "Météo", "Dylan"],
+                correct: 3
+            },
+            {
+                question: "Quel est le vrai nom d'Enzo ?",
+                answers: ["Enzo la fripouille", "Enzo Marradi", "John Ghotti", "Enzo Morradi"],
+                correct: 1
+            },
+            {
+                question: "Qui est le père de Carlito ?",
+                answers: ["Malon", "Calom", "Carron", "Ramon"],
+                correct: 1
+            },
+            {
+                question: "laquelle de ces filles est amoureuse de Caleb en secret ?",
+                answers: ["Louna", "Inès", "Jacqueline", "Anastasia"],
+                correct: 1
+            },
+            {
+                question: "Lequelle de personnes n'etais pas à hawaï ?",
+                answers: ["Christopher", "Noël", "Zen", "Louna"],
+                correct: 2
+            },
+            {
+                question: "Qui est le plus riche parmi ces 4 ?",
+                answers: ["Daniel Muller", "Emmanuelle Macron", "M.François", "Élise simmons"],
+                correct: 2
+            },  
+            {
+                question: "Lequelle de ces missiles a causé la mort de Capasta ?",
+                answers: ["Valhalla", "Vanguard", "Kamaguétchi", "Kamikazi"],
+                correct: 0
+            },
+            {
+                question: "Qui est le meilleur ami de Daniel ?",
+                answers: ["Personne", "Rodriguo", "Caleb", "Luc"],
+                correct: 0
+            },
+            {
+                question: "Qui est le confident de Caleb ?",
+                answers: ["Noël", "Flavio", "Daniel", "Joey"],
+                correct: 0
+            },
+            {
+                question: "Où habite Sammy ?",
+                answers: ["Hautes Alpes", "Strawberry", "Strasbourg", "Au forum"],
+                correct: 1
+            },
+            {
+                question: "Les équipes de F2rx se composent de combien de joueurs ?",
+                answers: ["5 par équipe", "4 par équipe", "2 par équipe", "8 par équipe"],
+                correct: 0
+            },
+            {
+                question: "Qui est la plus grosse balance parmi ces 4 ?",
+                answers: ["Joey", "Louna", "Tag", "Jason"],
+                correct: 0
+            },
+            {
+                question: "lequelle de ces 4 est le moin fiable (Traître) ?",
+                answers: ["Louna", "Daniel", "Caleb", "Jason"],
+                correct: 1
+            },
+            {
+                question: "Qui est le complice de Daniel ?",
+                answers: ["Caleb", "Rodrigo", "Mathéo", "Christopher"],
+                correct: 2
+            },
+            {
+                question: "Lequel de ces entités n'a toujours pas été vaincus ?",
+                answers: ["La chèvre", "Oudooova", "Peugo", "Le génie"],
+                correct: 0
+            },
+            {
+                question: "Qui est la plus timide ?",
+                answers: ["Inès", "Mawelle", "Krina", "Cassidy"],
+                correct: 1
+            },
+            {
+                question: "Qui est le plus religieux ?",
+                answers: ["Sammy", "Flavio", "Greg", "Bruno"],
+                correct: 3
+            },
+            {
+                question: "Pourquoi Junior a t-il arrêté ses études ?",
+                answers: ["Les bars", "Cours à domiciles", "L'armée", "Banditisme"],
+                correct: 2
+            },
+            {
+                question: "Qui est le plus fort parmi ces 4 ?",
+                answers: ["Zaphyr", "Dash", "Enzo", "Junior (actuel)"],
+                correct: 0
+            },
+            {
+                question: "Qui ment le plus parmi ces 4 ?",
+                answers: ["Caleb", "Louna", "Jason", "Daniel"],
+                correct: 2
+            },
+            {
+                question: "Quel est l'organe principal de la digestion chez l'homme ?",
+                answers: ["Estomac", "Intestin grêle", "Foie", "Pancréas"],
+                correct: 1
+            },                 
+            {
+                question: "Comment s'appelle la copine de Dash ?",
+                answers: [ "Vannéssa", "Jéssica", "Maria", "Sophie"],
+                correct: 1
+            },
+            {
+                question: "Avec laquelle Jason a eu une relation amoureuse ?",
+                answers: ["Annie", "Cassidy", "Anne", "Tammi"],
+                correct: 3
+            },
+            {
+                question: "Qui est le vrai petit ami de Louna ?",
+                answers: ["Daniel", "Zaphyr", "Caleb", "Junior"],
+                correct: 1
+            },
+            {
+                question: "Qui est le plus grand menteur parmi ces 4 ?",
+                answers: ["Caleb", "Daniel", "Jason", "Joey"],
+                correct: 2
+            },
+            {
+                question: "La guerre avec les missiles de Daniel était la quandtième ?",
+                answers: ["1ère", "5ème", "3ème", "4ème"],
+                correct: 3
+            },
+            {
+                question: "Qui est le moin fort parmi les 4 ?",
+                answers: ["Marion", "Zen", "Christopher", "Junior(ancien)"],
+                correct: 3
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+        let userAnswers = [];
+        let answered = false;
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            document.getElementById(pageId).classList.add('active');
+        }
+
+        function startQuiz() {
+            currentQuestion = 0;
+            score = 0;
+            userAnswers = [];
+            showPage('question-page');
+            displayQuestion();
+        }
+
+        function displayQuestion() {
+            answered = false;
+            const question = questions[currentQuestion];
+            
+            document.getElementById('question-counter').textContent = 
+                `Question ${currentQuestion + 1}/${questions.length}`;
+            
+            document.getElementById('question-text').textContent = question.question;
+            
+            const answerButtons = document.querySelectorAll('.answer-btn');
+            answerButtons.forEach((btn, index) => {
+                btn.textContent = question.answers[index];
+                btn.className = 'answer-btn';
+                btn.disabled = false;
+            });
+
+            document.getElementById('feedback').style.display = 'none';
+            document.getElementById('next-btn').style.display = 'none';
+
+            // Mise à jour de la barre de progression
+            const progress = ((currentQuestion) / questions.length) * 100;
+            document.getElementById('progress-fill').style.width = progress + '%';
+        }
+
+        function selectAnswer(selectedIndex) {
+            if (answered) return;
+            
+            answered = true;
+            const question = questions[currentQuestion];
+            const answerButtons = document.querySelectorAll('.answer-btn');
+            
+            userAnswers[currentQuestion] = selectedIndex;
+            
+            // Désactiver tous les boutons
+            answerButtons.forEach(btn => btn.disabled = true);
+            
+            // Colorer les réponses
+            answerButtons[question.correct].classList.add('correct');
+            if (selectedIndex !== question.correct) {
+                answerButtons[selectedIndex].classList.add('incorrect');
+            }
+            
+            // Afficher le feedback
+            const feedback = document.getElementById('feedback');
+            if (selectedIndex === question.correct) {
+                score++;
+                feedback.textContent = '✅ Bonne réponse !';
+                feedback.className = 'feedback correct';
+            } else {
+                feedback.textContent = `❌ Incorrect ! La bonne réponse était : ${question.answers[question.correct]}`;
+                feedback.className = 'feedback incorrect';
+            }
+            
+            feedback.style.display = 'block';
+            
+            // Afficher le bouton suivant
+            const nextBtn = document.getElementById('next-btn');
+            if (currentQuestion < questions.length - 1) {
+                nextBtn.textContent = 'Question Suivante';
+                nextBtn.style.display = 'block';
+            } else {
+                nextBtn.textContent = 'Voir les Résultats';
+                nextBtn.style.display = 'block';
+            }
+        }
+
+        function nextQuestion() {
+            currentQuestion++;
+            if (currentQuestion < questions.length) {
+                displayQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            const percentage = Math.round((score / questions.length) * 100);
+            
+            document.getElementById('score-display').textContent = `${score}/${questions.length}`;
+            
+            let message = '';
+            if (percentage >= 80) {
+                message = '🏆 Excellent ! Tu connais épi !';
+            } else if (percentage >= 60) {
+                message = '👍 Bien joué ! Pas mal mais t\'es censé faire mieux !';
+            } else if (percentage >= 40) {
+                message = ' kieee épi toi aussi 😒 !';
+            } else {
+                message = 'NOOOON caaaaa, tu abuses trop nul !';
+            }
+            
+            document.getElementById('score-message').textContent = message;
+            
+            // Afficher les détails des réponses
+            let detailedResults = '<div style="text-align: left; margin-top: 20px;">';
+            detailedResults += '<h3 style="text-align: center; margin-bottom: 15px;">Détail de vos réponses :</h3>';
+            
+            questions.forEach((question, index) => {
+                const userAnswer = userAnswers[index];
+                const isCorrect = userAnswer === question.correct;
+                const icon = isCorrect ? '✅' : '❌';
+                
+                detailedResults += `
+                    <div style="margin-bottom: 15px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px;">
+                        <strong>${icon} Question ${index + 1}:</strong> ${question.question}<br>
+                        <span style="color: ${isCorrect ? '#4CAF50' : '#f44336'};">
+                            Votre réponse : ${question.answers[userAnswer]}
+                        </span>
+                        ${!isCorrect ? `<br><span style="color: #4CAF50;">Bonne réponse : ${question.answers[question.correct]}</span>` : ''}
+                    </div>
+                `;
+            });
+            
+            detailedResults += '</div>';
+            document.getElementById('detailed-results').innerHTML = detailedResults;
+            
+            showPage('results-page');
+        }
+
+        function restartQuiz() {
+            showPage('welcome-page');
+        }
+    </script>
+</body>
+</html>
